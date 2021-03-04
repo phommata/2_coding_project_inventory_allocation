@@ -16,7 +16,7 @@ type AppConfig struct {
 }
 
 type AddressConfig struct {
-	HTTP  string `env:"HTTP_ADDR" envDefault:":80"`
+	HTTP  string `env:"HTTP_ADDR" envDefault:":8080"`
 }
 
 func main() {
@@ -26,11 +26,15 @@ func main() {
 	}
 
 	rtr := mux.NewRouter()
-	setupBasicRoutes(rtr)
 	svr := http.Server{
 		Addr:    config.Addr.HTTP,
 		Handler: rtr,
 	}
+
+	//Set Up Inventory Service and Inventory Routes
+	inventoryService := inventory.NewElavonService(logger, client)
+	inventoryEndpoints := inventory.MakeEndpoints(inventoryService)
+	setInventoryRoutes(rtr, inventoryEndpoints)
 
 	var g group.Group
 	{
@@ -64,8 +68,6 @@ func setUpConfig() (AppConfig, error) {
 	return cfg, nil
 }
 
-//As dependencies are added, they will be added to this function signature as arguments.
-//They will then be passed in to the `make{}Handler` function.
-func setupBasicRoutes(r *mux.Router) {
-
+func setElavonRoutes(rtr *mux.Router, endpoints inventory.Endpoints) {
+	rtr.Methods(http.MethodPost).Path("/inventory/allocate").inventoryAllocateHandler(endpoints.InventoryAllocateEndpoint)
 }
